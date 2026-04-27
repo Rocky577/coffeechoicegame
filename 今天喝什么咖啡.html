@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天喝什么咖啡</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D4037',
+                        secondary: '#8D6E63',
+                        accent: '#D7CCC8',
+                        light: '#FAFAFA',
+                        dark: '#3E2723'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .coffee-bg {
+                background-color: #5D4037;
+            }
+            .btn-coffee {
+                @apply bg-primary hover:bg-secondary text-white font-bold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50 shadow-lg;
+            }
+            .card-coffee {
+                @apply bg-white bg-opacity-90 rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl;
+            }
+            .brand-checkbox {
+                @apply w-6 h-6 text-primary focus:ring-primary border-gray-300 rounded;
+            }
+            .brand-label {
+                @apply flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-accent;
+            }
+            .brand-label.active {
+                @apply bg-accent;
+            }
+            .wheel-container {
+                position: relative;
+                width: 300px;
+                height: 300px;
+                margin: 0 auto;
+            }
+            .wheel {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                position: relative;
+                overflow: hidden;
+                transition: transform 5s cubic-bezier(0.1, 0.05, 0.15, 1);
+            }
+            .wheel-center {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 60px;
+                height: 60px;
+                background-color: #fff;
+                border-radius: 50%;
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+            .wheel-pointer {
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 0;
+                height: 0;
+                border-left: 20px solid transparent;
+                border-right: 20px solid transparent;
+                border-bottom: 30px solid #5D4037;
+                z-index: 10;
+            }
+            .wheel-slice {
+                position: absolute;
+                width: 50%;
+                height: 50%;
+                transform-origin: 100% 100%;
+                left: 50%;
+                top: 0;
+                border-radius: 0 0 0 100%;
+            }
+            .confetti {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                background-color: #f00;
+                border-radius: 50%;
+                animation: confetti-fall 3s ease-in-out forwards;
+                z-index: 100;
+            }
+            @keyframes confetti-fall {
+                0% {
+                    transform: translateY(-100vh) rotate(0deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+            .brand-item {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 8px;
+                transition: all 0.3s ease;
+            }
+            .brand-item img {
+                width: 50px;
+                height: 50px;
+                object-fit: contain;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            .brand-item span {
+                margin-top: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                text-align: center;
+            }
+            @media (min-width: 768px) {
+                .brand-item img {
+                    width: 80px;
+                    height: 80px;
+                }
+                .brand-item span {
+                    font-size: 14px;
+                }
+            }
+            .brands-scroll-container {
+                position: relative;
+                width: 90vw;
+                height: 90vw;
+                max-width: 400px;
+                max-height: 400px;
+                margin: 0 auto;
+                overflow: hidden;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+                box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-light min-h-screen font-sans">
+    <!-- 开始界面 -->
+    <section id="start-screen" class="min-h-screen flex flex-col items-center justify-center coffee-bg">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 text-shadow">Ally，今天喝什么咖啡？</h1>
+            <p class="text-xl md:text-2xl text-white mb-8 max-w-2xl mx-auto">让我们来帮你做个决定吧！点击开始，选择你喜欢的咖啡品牌，然后随机选出今天的咖啡。</p>
+            <button id="start-btn" class="btn-coffee text-xl">
+                <i class="fa fa-coffee mr-2"></i> 开始选择
+            </button>
+        </div>
+    </section>
+
+    <!-- 咖啡类型选择界面 -->
+    <section id="coffee-type-selection" class="min-h-screen py-16 px-4 hidden">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-primary mb-4">选择你喜欢的咖啡类型</h2>
+                <p class="text-lg text-gray-600">选择一种咖啡类型，然后我们将为你推荐合适的品牌</p>
+            </div>
+            
+            <div class="card-coffee mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="coffee-type-option cursor-pointer bg-accent bg-opacity-30 rounded-xl p-8 text-center hover:bg-opacity-50 transition-all duration-300 transform hover:scale-105" data-type="americano">
+                        <img src="https://p11-doubao-search-sign.byteimg.com/labis/b4e900973c54f23e968651f789322792~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792814231&x-signature=FIuG5FVRbzaLgBNdwNLIpBNLJao%3D" alt="美式咖啡" class="w-32 h-32 mx-auto mb-4 object-contain">
+                        <h3 class="text-2xl font-bold text-primary mb-2">美式咖啡</h3>
+                        <p class="text-gray-600">醇厚的黑咖啡，口感清爽，适合喜欢纯粹咖啡风味的你</p>
+                    </div>
+                    <div class="coffee-type-option cursor-pointer bg-accent bg-opacity-30 rounded-xl p-8 text-center hover:bg-opacity-50 transition-all duration-300 transform hover:scale-105" data-type="latte">
+                        <img src="https://p26-doubao-search-sign.byteimg.com/labis/2507c185358704813d7056a3370375bd~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792814231&x-signature=fkm1t%2F%2BtexSMUGWDp4K1vppZ0%2B4%3D" alt="拿铁咖啡" class="w-32 h-32 mx-auto mb-4 object-contain">
+                        <h3 class="text-2xl font-bold text-primary mb-2">拿铁咖啡</h3>
+                        <p class="text-gray-600">浓郁的咖啡与丝滑的牛奶完美融合，口感丰富顺滑</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="back-to-start-btn" class="btn-coffee bg-gray-500 hover:bg-gray-600">
+                    <i class="fa fa-arrow-left mr-2"></i> 返回
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 温度选择界面 -->
+    <section id="temperature-selection" class="min-h-screen py-16 px-4 hidden">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-primary mb-4">选择咖啡温度</h2>
+                <p class="text-lg text-gray-600">你喜欢冰的还是热的咖啡呢？</p>
+            </div>
+            
+            <div class="card-coffee mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="temperature-option cursor-pointer bg-blue-100 rounded-xl p-8 text-center hover:bg-blue-200 transition-all duration-300 transform hover:scale-105" data-temperature="iced">
+                        <i class="fa fa-snowflake-o text-5xl text-blue-500 mb-4"></i>
+                        <h3 class="text-2xl font-bold text-blue-600 mb-2">冰咖啡</h3>
+                        <p class="text-gray-600">清爽解暑，适合炎热的天气，带来清凉的口感体验</p>
+                    </div>
+                    <div class="temperature-option cursor-pointer bg-red-100 rounded-xl p-8 text-center hover:bg-red-200 transition-all duration-300 transform hover:scale-105" data-temperature="hot">
+                        <i class="fa fa-fire text-5xl text-red-500 mb-4"></i>
+                        <h3 class="text-2xl font-bold text-red-600 mb-2">热咖啡</h3>
+                        <p class="text-gray-600">温暖舒适，香气四溢，经典的咖啡饮用方式</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="back-to-coffee-type-btn" class="btn-coffee bg-gray-500 hover:bg-gray-600">
+                    <i class="fa fa-arrow-left mr-2"></i> 返回
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 品牌选择界面 -->
+    <section id="brand-selection" class="min-h-screen py-16 px-4 hidden">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-primary mb-4">选择你喜欢的咖啡品牌</h2>
+                <p class="text-lg text-gray-600">至少选择一个品牌，然后点击确定</p>
+            </div>
+            
+            <div class="card-coffee mb-8">
+                <div id="brand-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 品牌列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="back-btn" class="btn-coffee bg-gray-500 hover:bg-gray-600 mr-4">
+                    <i class="fa fa-arrow-left mr-2"></i> 返回
+                </button>
+                <button id="confirm-btn" class="btn-coffee" disabled>
+                    <i class="fa fa-check mr-2"></i> 确定选择
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 结果展示界面 -->
+    <section id="result-screen" class="min-h-screen py-16 px-4 hidden">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl font-bold text-primary mb-4">今天你应该喝...</h2>
+            <p class="text-xl text-gray-600 mb-8">从<span class="font-bold text-primary" id="brand-count">多个精选品牌</span>中，转出你的今日咖啡！</p>
+            
+            <div class="card-coffee mb-12">
+                <div id="brands-scroll" class="brands-scroll-container mb-8">
+                    <!-- 品牌滚动效果将通过JavaScript动态生成 -->
+                </div>
+                
+                <div id="result-brand" class="mt-8 hidden">
+                    <div class="bg-accent bg-opacity-20 rounded-full p-6 mb-6 inline-block animate-bounce">
+                        <img id="result-logo" src="" alt="品牌标志" class="w-48 h-48 mx-auto object-contain">
+                    </div>
+                    <div class="bg-primary bg-opacity-10 rounded-xl p-6 mb-6">
+                        <h3 id="result-name" class="text-5xl font-bold text-primary mb-4"></h3>
+                        <p class="text-xl text-gray-700 mb-2">恭喜你！从<span class="font-bold text-primary" id="result-brand-count">多个品牌</span>中脱颖而出！</p>
+                        <p id="result-description" class="text-gray-600 text-xl"></p>
+                    </div>
+                    <p class="text-xl font-semibold text-secondary">今天就喝这个吧！</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <button id="restart-btn" class="btn-coffee">
+                    <i class="fa fa-refresh mr-2"></i> 再来一次
+                </button>
+                <button id="share-btn" class="btn-coffee bg-blue-600 hover:bg-blue-700">
+                    <i class="fa fa-share-alt mr-2"></i> 分享结果
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 咖啡品牌数据
+        const coffeeBrands = [
+            {
+                id: 'starbucks',
+                name: '星巴克',
+                logo: 'https://p11-doubao-search-sign.byteimg.com/isp-i18n-media/image/73f383bf0543d464f0d5b2801b140db5~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=p0Y6AmrzyP%2B7wwCBdxOIsV0DY6o%3D',
+                description: '来自美国的全球最大咖啡连锁品牌，以其独特的第三空间概念和多样化的咖啡饮品而闻名。'
+            },
+            {
+                id: 'luckin',
+                name: '瑞幸咖啡',
+                logo: 'https://p26-doubao-search-sign.byteimg.com/isp-i18n-media/img/605190694d1c36e7c5f7ddbbc7cf7f0e~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=cFWt4lT9UX1lsWOId0%2FlK2GUvu0%3D',
+                description: '中国本土咖啡品牌，以其高性价比和便捷的线上点单服务迅速崛起。'
+            },
+            {
+                id: 'peets',
+                name: "Peet's Coffee",
+                logo: 'https://p11-doubao-search-sign.byteimg.com/isp-i18n-media/img/5a5e5a61159999d03c216c82eb399af6~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=mWjLBKB7f1yW9QouUmoGlsTR5cY%3D',
+                description: '美国精品咖啡的祖师爷，深度烘焙的鼻祖，星巴克的灵感源头。'
+            },
+            {
+                id: 'arabica',
+                name: '%Arabica',
+                logo: 'https://p11-doubao-search-sign.byteimg.com/isp-i18n-media/img/4277cf9c7a2a1d3177f2dbe46dd6db2f~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=Yp66wo4X9Q02RJQzlH1cOCcCHQ0%3D',
+                description: '源于香港的精品咖啡品牌，以其极简的设计风格和高品质的阿拉比卡咖啡豆著称。'
+            },
+            {
+                id: 'manner',
+                name: 'Manner Coffee',
+                logo: 'https://p11-doubao-search-sign.byteimg.com/isp-i18n-media/image/8c3b98da88b20ee7824280145f3fbaf8~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=CuJGtlGBM5LjANCIBGeF30qng5Q%3D',
+                description: '中国本土精品咖啡品牌，以其小巧的门店和高品质的意式浓缩咖啡而受到喜爱。'
+            },
+            {
+                id: 'bluebottle',
+                name: 'Blue Bottle',
+                logo: 'https://p3-doubao-search-sign.byteimg.com/isp-i18n-media/img/90c8f9d27d8e1ba8e97a416bc28eb2d4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=Who%2FPpZr%2F1ui0SPjGKvs8LZNTu4%3D',
+                description: '美国精品咖啡连锁，以其新鲜烘焙的咖啡豆和极简的美学风格而闻名。'
+            },
+            {
+                id: 'costa',
+                name: 'Costa Coffee',
+                logo: 'https://p3-doubao-search-sign.byteimg.com/isp-i18n-media/img/584c35d21bf37b7a35410e58760e4ff7~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=rvL5g4UoZHoTh7nP2E9CrIeEWRc%3D',
+                description: '英国咖啡连锁品牌，以其醇厚的意式烘焙咖啡和舒适的店内环境而受到欢迎。'
+            },
+            {
+                id: 'mstand',
+                name: 'M Stand',
+                logo: 'https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/08cc7c5beec24ab09f6e68b7acc09253~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=rXSaOQrIKiQqAjNgBcQ9VaNY7bg%3D',
+                description: '中国本土精品咖啡品牌，以其独特的"一豆三喝"概念和现代简约的门店设计而脱颖而出。'
+            },
+            {
+                id: 'timhortons',
+                name: 'Tim Hortons',
+                logo: 'https://p3-doubao-search-sign.byteimg.com/isp-i18n-media/img/90c8f9d27d8e1ba8e97a416bc28eb2d4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=Who%2FPpZr%2F1ui0SPjGKvs8LZNTu4%3D',
+                description: '加拿大咖啡连锁品牌，以其经典的咖啡和甜甜圈组合而闻名。'
+            },
+            {
+                id: 'seesaw',
+                name: 'Seesaw',
+                logo: 'https://p3-doubao-search-sign.byteimg.com/isp-i18n-media/img/584c35d21bf37b7a35410e58760e4ff7~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=rvL5g4UoZHoTh7nP2E9CrIeEWRc%3D',
+                description: '中国本土精品咖啡品牌，以其创意咖啡和舒适的门店氛围受到年轻人喜爱。'
+            },
+            {
+                id: 'mccafe',
+                name: '麦咖啡',
+                logo: 'https://p26-doubao-search-sign.byteimg.com/isp-i18n-media/img/605190694d1c36e7c5f7ddbbc7cf7f0e~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1792813711&x-signature=cFWt4lT9UX1lsWOId0%2FlK2GUvu0%3D',
+                description: '麦当劳旗下的咖啡品牌，以其便捷的服务和高性价比的咖啡产品而受到欢迎。'
+            }
+        ];
+
+        // 颜色数组，用于轮盘的不同切片
+        const wheelColors = [
+            '#5D4037', '#8D6E63', '#A1887F', '#D7CCC8', '#BCAAA4', '#EFEBE9'
+        ];
+
+        // DOM元素
+        const startScreen = document.getElementById('start-screen');
+        const coffeeTypeSelection = document.getElementById('coffee-type-selection');
+        const temperatureSelection = document.getElementById('temperature-selection');
+        const brandSelection = document.getElementById('brand-selection');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const backToStartBtn = document.getElementById('back-to-start-btn');
+        const backToCoffeeTypeBtn = document.getElementById('back-to-coffee-type-btn');
+        const backBtn = document.getElementById('back-btn');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const brandList = document.getElementById('brand-list');
+        const brandsScroll = document.getElementById('brands-scroll');
+        const resultBrand = document.getElementById('result-brand');
+        const resultLogo = document.getElementById('result-logo');
+        const resultName = document.getElementById('result-name');
+        const resultDescription = document.getElementById('result-description');
+        const coffeeTypeOptions = document.querySelectorAll('.coffee-type-option');
+        const temperatureOptions = document.querySelectorAll('.temperature-option');
+        
+        // 选中的咖啡类型和温度
+        let selectedCoffeeType = '';
+        let selectedTemperature = '';
+
+        // 已选择的品牌
+        let selectedBrands = [];
+
+        // 初始化品牌列表
+        function initBrandList() {
+            brandList.innerHTML = '';
+            coffeeBrands.forEach((brand, index) => {
+                const brandItem = document.createElement('div');
+                brandItem.className = 'brand-label';
+                brandItem.innerHTML = `
+                    <input type="checkbox" id="${brand.id}" class="brand-checkbox mr-3" value="${brand.id}">
+                    <label for="${brand.id}" class="flex items-center cursor-pointer flex-1">
+                        <img src="${brand.logo}" alt="${brand.name}" class="w-10 h-10 mr-3 object-contain">
+                        <span class="font-medium">${brand.name}</span>
+                    </label>
+                `;
+                
+                const checkbox = brandItem.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        selectedBrands.push(brand);
+                        brandItem.classList.add('active');
+                    } else {
+                        selectedBrands = selectedBrands.filter(b => b.id !== brand.id);
+                        brandItem.classList.remove('active');
+                    }
+                    updateConfirmButton();
+                });
+                
+                brandList.appendChild(brandItem);
+            });
+        }
+
+        // 更新确认按钮状态
+        function updateConfirmButton() {
+            confirmBtn.disabled = selectedBrands.length === 0;
+            confirmBtn.classList.toggle('opacity-50', selectedBrands.length === 0);
+        }
+
+        // 创建品牌滚动效果
+        function createBrandsScroll() {
+            brandsScroll.innerHTML = '';
+
+            // 更新品牌数量显示
+            document.getElementById('brand-count').textContent = `${selectedBrands.length}个精选品牌`;
+
+            const containerWidth = brandsScroll.offsetWidth;
+            const centerX = containerWidth / 2;
+            const centerY = containerWidth / 2;
+
+            selectedBrands.forEach((brand, index) => {
+                const brandItem = document.createElement('div');
+                brandItem.className = 'brand-item';
+                brandItem.innerHTML = `
+                    <img src="${brand.logo}" alt="${brand.name}">
+                    <span>${brand.name}</span>
+                `;
+
+                // 初始位置 - 在圆形容器中心
+                const angle = (index / selectedBrands.length) * Math.PI * 2;
+                const radius = 0;
+                const initialX = centerX - 40 + Math.cos(angle) * radius;
+                const initialY = centerY - 40 + Math.sin(angle) * radius;
+
+                brandItem.style.left = `${initialX}px`;
+                brandItem.style.top = `${initialY}px`;
+                brandItem.style.opacity = '0.7';
+                brandItem.style.transform = 'scale(0.8)';
+
+                brandsScroll.appendChild(brandItem);
+            });
+        }
+
+        // 品牌滚动并显示结果
+        function spinBrands() {
+            // 隐藏结果
+            resultBrand.classList.add('hidden');
+
+            // 确保M Stand在选中的品牌中
+            const mStandBrand = selectedBrands.find(brand => brand.id === 'mstand') || coffeeBrands.find(brand => brand.id === 'mstand');
+
+            // 开始滚动动画
+            const brandItems = brandsScroll.querySelectorAll('.brand-item');
+            const containerWidth = brandsScroll.offsetWidth;
+            const centerX = containerWidth / 2;
+            const centerY = containerWidth / 2;
+
+            // 混乱滚动效果
+            let chaosCount = 0;
+            const maxChaos = 15;
+
+            function animateChaos() {
+                if (chaosCount < maxChaos) {
+                    brandItems.forEach((item, index) => {
+                        // 在圆形范围内随机位置
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = Math.random() * (containerWidth * 0.375);
+                        const x = centerX - 40 + Math.cos(angle) * radius;
+                        const y = centerY - 40 + Math.sin(angle) * radius;
+
+                        gsap.to(item, {
+                            duration: 0.2,
+                            left: x,
+                            top: y,
+                            rotation: Math.random() * 720 - 360,
+                            scale: 0.6 + Math.random() * 0.4,
+                            opacity: 0.4 + Math.random() * 0.6,
+                            ease: "none",
+                            delay: index * 0.02
+                        });
+                    });
+                    chaosCount++;
+                    setTimeout(animateChaos, 200);
+                } else {
+                    // 滚动结束，显示结果
+                    setTimeout(() => {
+                        // 添加结果揭晓的动画效果
+                        gsap.fromTo(resultBrand,
+                            { opacity: 0, y: 50, scale: 0.8 },
+                            {
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                duration: 1,
+                                ease: "back.out(1.7)",
+                                onStart: function() {
+                                    resultBrand.classList.remove('hidden');
+                                    resultLogo.src = mStandBrand.logo;
+
+                                    // 根据选择的温度调整结果名称
+                                    const temperatureText = selectedTemperature === 'iced' ? '冰' : '热';
+                                    const coffeeTypeText = selectedCoffeeType === 'americano' ? '美式' : '拿铁';
+                                    resultName.textContent = `${mStandBrand.name} ${temperatureText}${coffeeTypeText}`;
+
+                                    resultDescription.textContent = mStandBrand.description;
+
+                                    // 更新结果页面的品牌数量显示
+                                    document.getElementById('result-brand-count').textContent = `${selectedBrands.length}个品牌`;
+
+                                    // 创建庆祝效果
+                                    createConfetti();
+
+                                    // 添加结果揭晓时的文字提示
+                                    const announcement = document.createElement('div');
+                                    announcement.className = 'fixed top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-50';
+                                    announcement.innerHTML = `
+                                        <div class="bg-primary text-white px-8 py-4 rounded-full text-2xl font-bold animate-bounce">
+                                            从${selectedBrands.length}个品牌中脱颖而出！
+                                        </div>
+                                    `;
+                                    document.body.appendChild(announcement);
+
+                                    // 3秒后移除提示
+                                    setTimeout(() => {
+                                        gsap.to(announcement, {
+                                            opacity: 0,
+                                            y: -50,
+                                            duration: 1,
+                                            onComplete: () => announcement.remove()
+                                        });
+                                    }, 3000);
+                                }
+                            }
+                        );
+                    }, 500);
+                }
+            }
+
+            animateChaos();
+        }
+
+        // 创建庆祝效果
+        function createConfetti() {
+            const confettiContainer = document.querySelector('#result-screen');
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 3}s`;
+                confetti.style.animationDuration = `${3 + Math.random() * 2}s`;
+                confettiContainer.appendChild(confetti);
+                
+                // 动画结束后移除元素
+                confetti.addEventListener('animationend', () => {
+                    confetti.remove();
+                });
+            }
+        }
+
+        // 分享结果
+        function shareResult() {
+            const result = resultName.textContent;
+            const text = `今天我要喝${result}！快来试试"今天喝什么咖啡"小游戏，让它帮你做决定吧！`;
+            
+            // 检查是否支持Web Share API
+            if (navigator.share) {
+                navigator.share({
+                    title: '今天喝什么咖啡',
+                    text: text,
+                    url: window.location.href
+                }).catch(err => {
+                    console.error('分享失败:', err);
+                    alert('分享功能暂不可用，请手动分享。');
+                });
+            } else {
+                // 复制到剪贴板
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('结果已复制到剪贴板，快去分享吧！');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动分享。');
+                });
+            }
+        }
+
+        // 事件监听器
+        startBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            // 显示咖啡类型选择页面
+            coffeeTypeSelection.classList.remove('hidden');
+        });
+        
+        // 咖啡类型选择事件
+        coffeeTypeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                selectedCoffeeType = option.dataset.type;
+                coffeeTypeSelection.classList.add('hidden');
+                // 显示温度选择页面
+                temperatureSelection.classList.remove('hidden');
+            });
+        });
+        
+        // 温度选择事件
+        temperatureOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                selectedTemperature = option.dataset.temperature;
+                temperatureSelection.classList.add('hidden');
+                
+                // 显示品牌选择页面
+                brandSelection.classList.remove('hidden');
+            });
+        });
+        
+        // 返回咖啡类型选择页面
+        backToCoffeeTypeBtn.addEventListener('click', () => {
+            temperatureSelection.classList.add('hidden');
+            coffeeTypeSelection.classList.remove('hidden');
+        });
+        
+        // 返回开始页面
+        backToStartBtn.addEventListener('click', () => {
+            coffeeTypeSelection.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+        backBtn.addEventListener('click', () => {
+            brandSelection.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            selectedBrands = [];
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            brandSelection.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            createBrandsScroll();
+            spinBrands();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            resultScreen.classList.add('hidden');
+            coffeeTypeSelection.classList.remove('hidden');
+            selectedCoffeeType = '';
+            selectedTemperature = '';
+        });
+
+        shareBtn.addEventListener('click', shareResult);
+
+        // 初始化
+        initBrandList();
+    </script>
+</body>
+</html>
